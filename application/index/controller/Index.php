@@ -1,6 +1,7 @@
 <?php
 namespace app\index\controller;
 use think\captcha\Captcha;
+use think\Session;
 
 class Index extends Common{
     /**
@@ -22,9 +23,11 @@ class Index extends Common{
 			} else if ($user['password'] == encryptPwd(input('password'))) {
 				//保存session
 				session('user.id', $user['id']);
+				session('user.name', $user['name']);
+				session('user.user_type', $user['user_type']);
 				//重置登录错误次数
-				db('users')->where(array('id' => $user['id']))->update(array('remain' => 5));
-				return array('status' => true, 'msg' => '登录成功！');
+                db('users')->where(array('id' => $user['id']))->update(array('remain' => 5));
+				return array('status' => true, 'msg' => '登录成功！', 'name' => $user['name'], 'user_type' => $user['user_type']);
 			} else {
 				db('users')->where(array('id' => $user['id']))->update(['remain' => array('dec', '1')]);
 				if ($user['remain'] == 1) {
@@ -48,7 +51,7 @@ class Index extends Common{
         if (empty(session('user'))) {
             return false;
         } else {
-            return true;
+            return ['status' => true, 'user' => session::get('user')];
         }
     }
     /* 退出登录 */
