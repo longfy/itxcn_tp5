@@ -6,6 +6,8 @@
 namespace app\index\controller;
 
 //使用系统相关方法得继承系统控制器
+use think\Db;
+use think\File;
 use think\Controller;
 use think\Request;
 use think\Response;
@@ -32,24 +34,44 @@ class Common{
     public function uploads(){
         // 获取表单上传文件
         $file = request()->file('file');
-        // 移动到框架应用根目录/public/uploads/ 目录下
+        $uploadPath = config('upload_path.file_path');
+        $type       = config('upload_file_type');
+        $size       = config('upload_file_size');
+        $fileName   = $file->getInfo()['name'];
         if($file){
-            $info = $file->move(ROOT_PATH . 'public' . DS . 'uploads');
+            //验证、上传文件
+            $info = $file->validate(['size' => $size, 'ext' => $type])->move(ROOT_PATH . 'public' . DS . $uploadPath, true, false);
             if($info){
+                $saveName = $info->getFilename();
+                $savepath = substr($info->getSaveName(), 0, strpos($info->getSaveName(), DS));
+                $filePath = ROOT_PATH . 'public' . DS . $uploadPath . DS . $info->getSaveName();
                 // 成功上传后 获取上传信息
-                // 输出 jpg
-                //echo $info->getExtension();
-                // 输出 20160820/42a79759f284b767dfcb2a0197904287.jpg
-                //echo $info->getSaveName();
-                // 输出 42a79759f284b767dfcb2a0197904287.jpg
-                //echo $info->getFilename(); 
-				$path = $info->getSaveName();
+                $fileData = [
+                    'name'        => $fileName,
+                    'savename'    => $saveName,
+                    'savepath'    => $savepath,
+                    'type'        => $info->getExtension(),
+                    'mime'        => $info->getMime(),
+                    'size'        => $info->getSize(),
+                    'md5'         => $info->md5(),
+                    'sha1'        => $info->sha1(),
+                    'is_use'      => 0,
+                    'create_time' => date('Y-m-d H:i:s'),
+                ];
+                Db::startTrans();
+                $flagA  = Db::table('attachment')->insertGetId($fileData);
+                if ($flagA) {
+                    Db::commit();
+                    $attachment = db('attachment')->where(array('savename' => $saveName))->find();
+                    return ['status' => true, 'msg' => '上传成功！', 'saveName' => $saveName, 'savepath' => $savepath, 'attachment_id' => $attachment['id']];
+                } else {
+                    Db::rollback();
+                    return ['status' => false, 'msg' => '上传失败！', 'fileName' => $fileName, 'filePath' => $filePath];
+                }
             }else{
                 // 上传失败获取错误信息
-                //echo $file->getError();
-				return array('status' => false, 'msg' => $file->getError());
+                return ['status' => false, 'msg' => $file->getError(), 'fileName' => $fileName];
             }
-			return array('status' => true, 'path' => $path);
         }
     }
 	
