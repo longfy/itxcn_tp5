@@ -168,7 +168,8 @@ class File extends SplFileObject
     {
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
 
-        return finfo_file($finfo, $this->filename);
+        $type = @finfo_file($finfo, $this->filename);
+        return $type;
     }
 
     /**
@@ -272,6 +273,19 @@ class File extends SplFileObject
 
         // 如果上传的不是图片，或者是图片而且后缀确实符合图片类型则返回 true
         return !in_array($extension, ['gif', 'jpg', 'jpeg', 'bmp', 'png', 'swf']) || in_array($this->getImageType($this->filename), [1, 2, 3, 4, 6, 13]);
+    }
+
+    /**
+     * 校验图像文件
+     * @access public
+     * @return bool
+     */
+    public function verifyImg()
+    {
+        $extension = strtolower(pathinfo($this->getInfo('name'), PATHINFO_EXTENSION));
+
+        // 是图片而且后缀确实符合图片类型则返回 true
+        return in_array($this->getImageType($this->filename), [1, 2, 3, 4, 6, 13]);
     }
 
     /**
