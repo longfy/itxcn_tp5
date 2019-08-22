@@ -56,7 +56,7 @@ class Navs extends Common{
             'name'          => input('name'),
             'create_time'   => date('Y-m-d H:i:s'),
         ));
-        return $this->getReturn(0, $add);
+        return getReturn(0, $add);
     }
 
     //编辑栏目
@@ -70,7 +70,7 @@ class Navs extends Common{
             return ['status' => false, 'msg' => '数据不存在！'];
         }
         $update = db('navs')->where('id',$id)->update(array('name'=> $name));
-        return $this->getReturn(2, $update);
+        return getReturn(2, $update);
     }
 
     //删除栏目
@@ -80,6 +80,6 @@ class Navs extends Common{
             return ['status' => false, 'msg' => '数据不存在！'];
         }
         $delete = db('navs')->where('id',$id)->delete();
-        return $this->getReturn(1,$delete);
+        return getReturn(1,$delete);
     }
 }

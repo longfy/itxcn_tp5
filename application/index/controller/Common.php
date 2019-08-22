@@ -12,25 +12,16 @@ use think\Controller;
 use think\Request;
 use think\Response;
 
-class Common{
+class Common extends Controller{
 	
     private $userId;
     //所有控制器类继承了\think\Controller类的话，可以定义控制器初始化方法_initialize，在该控制器的方法调用之前首先执行
     protected function _initialize()
     {
-        if (!IS_CLI) {
-            ///////////
-            //验证是否登录 //
-            ///////////
-            //$this->checkLogin();
-            ///////////
-            //检查用户权限 //
-            ///////////
-        }
-        //$this->userId               = session('user.id');
+        $this->userId = session('user.id');
     }
-	
-	//上传图片
+
+    //上传图片
     public function uploads(){
         // 获取表单上传文件
         $file = request()->file('file');
@@ -74,68 +65,139 @@ class Common{
             }
         }
     }
-	
-	/**
-     * 验证用户是否登录
-     * @author Ultraman/2018-06-01
-     * @return void
-     */
-    protected function checkLogin()
-    {
-        if (!(new Index)->checkLogin()) {
-            $request = request();
-            if ($request->isAjax()) {
-                if ($request->isGet()) {
-                    $response = array();
-                } else {
-                    $response = array('status' => false, 'msg' => '对不起，您没有登录，请先登录！');
-                }
-                Response::create($response, 'json')->send();
-                exit();
-            } else {
-                $type_view = $this->request->param("type_view",null);
-                if(empty($type_view)){
-                    $this->error('对不起，您没有登录，请先登录！');
-                }
 
+    /**
+     * [lists 列表数据]
+     * @param  [type]  $model       [模型数据]
+     * @param  array   $searchWhere [搜索条件]
+     * @param  boolean $field       [查询字段]
+     * @param  string  $order       [排序]
+     * @param  [type]  $group       [分组]
+     * @param  boolean $is_page     [分页]
+     * @param  [type]  $having      [having]
+     * @return [type]               [description]
+     */
+    protected function lists($model, $searchWhere = array(), $field = true, $order = '', $group = null, $is_page = true, $having = null)
+    {
+        if (is_string($model)) {
+            $model = M($model);
+        }
+        //接收所有的数据
+        $param = input(); // 获取通用条件,分页
+        $start = isset($param['start']) ? intval($param['start']) : 0;
+        $limit = isset($param['limit']) ? intval($param['limit']) : 25;
+        // 条件模式
+        // $searchWhere = [
+        //     'a.name|a.idcard' => array('like','search')
+        //     'a.pro_id' => array('exp',' IS NOT NULL'),
+        //     'a.time' => array('between',['begin_time','end_time']),
+        //     'a.id' => array('eq','id'),
+        // ];
+
+        //遍历 searchWhere  检测有没有模糊搜索
+        foreach ($searchWhere as $k => $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+            $exp = strtolower(trim($v[0]));
+            switch ($exp) {
+                case 'like':
+                    $search = isset($param[$v[1]]) ? $param[$v[1]] : '';
+                    if (!empty($search)) {
+                        $model->where(function ($query) use ($k, $search) {
+                            $query->where(array($k => array('like', '%' . $search . '%')));
+                        });
+                    }
+                    break;
+                case 'between':
+                    $sectorArr  = $v[1];
+                    $start_time = isset($param[$sectorArr[0]]) ? date('Y-m-d', strtotime($param[$sectorArr[0]])) . ' 00:00:00' : '';
+                    $end_time   = isset($param[$sectorArr[1]]) ? date('Y-m-d', strtotime($param[$sectorArr[1]])) . ' 23:59:59' : '';
+                    if ($start_time == "" && $end_time != "") {
+                        $model->where($k, 'ELT', $end_time);
+                    } elseif ($start_time != "" && $end_time == "") {
+                        $model->where($k, 'EGT', $start_time);
+                    } elseif ($start_time != "" && $end_time != "") {
+                        $model->where($k, 'between', array($start_time, $end_time));
+                    }
+                    break;
+                case 'exp':
+                    if (!empty($v[1])) {
+                        $model->where($k, 'exp', $v[1]);
+                    }
+                    break;
+                default:
+                    $search = isset($param[$v[1]]) && $param[$v[1]] ? $param[$v[1]] : '';
+                    $see    = $v[0];
+                    if (!empty($search)) {
+                        $model->where(function ($query) use ($k, $see, $search) {
+                            $query->where(array($k => array($see, $search)));
+                        });
+                    }
+                    break;
             }
         }
-    }
-	/**
-     * 得到用户id
-     * @author Ultraman/2018-11-23
-     */
-    public function getUserId()
-    {
-        return empty($this->userId) ? ($this->userId = session('user.id')) : $this->userId;
-    }
-    /**
-     * 返回操作状态
-     * @author Ultraman/2018-06-15
-     * @param  int $code   操作码：0、添加；1、删除；2、编辑；3、操作
-     * @param  bool $status 操作结果
-     * @return array         操作状态数组
-     */
-    protected function getReturn($code, $status)
-    {
-        $status  = $status !== false;
-        $codeMsg = array(
-            0 => array(1 => '添加成功！', 0 => '添加失败，请稍后重试！'),
-            1 => array(1 => '删除成功！', 0 => '删除失败，请稍后重试！'),
-            2 => array(1 => '编辑成功！', 0 => '编辑失败，请稍后重试！'),
-            3 => array(1 => '操作成功！', 0 => '操作失败，请稍后重试！'),
-        );
-        return array('status' => $status, 'msg' => $codeMsg[$code][intval($status)]);
-    }
+        //保存模型中现有的options
+        $options = $model->getOptions();
 
-    /**
-     * [msgReturn 简单的提示返回]
-     * @param  [type] $status [description]
-     * @param  [type] $msg    [description]
-     * @return [type]         [description]
-     */
-    protected function msgReturn($msg,$status=false){
-        return array('status'=>$status,'msg'=>$msg);
+        //获取模型中的主键
+        $pk = $model->getPrimaryKey();
+        //排序
+        if ($order === null) {
+            //order置空
+        } elseif ($order === '' && empty($options['order']) && !empty($pk)) {
+            if (is_array($pk)) {
+                foreach ($pk as $k => $v) {
+                    $options['order'][$k] = $v . ' desc';
+                }
+            } elseif (is_string($pk)) {
+                $options['order'][] = $pk . ' desc';
+            }
+        } elseif ($order) {
+            $options['order'] = $order;
+        }
+
+        //分组
+        if ($group) {
+            $options['group'] = $group;
+        }
+        //聚合条件
+        if ($having) {
+            $options['having'] = $having;
+        }
+
+        //过滤条件中的空值
+        if (isset($options['where'])) {
+            $options['where'] = array_filter((array) $options["where"], function ($val) {
+                if ($val === '' || $val === null || (isset($val[1]) && ($val[1] === "" || $val[1] === null || (is_array($val[1]) && empty($val[1]))))) {
+                    //if($val===''||$val===null || (trim($val[0])==="in" && empty($val[1]) )){//过滤掉不需要的请求参数，如:参数值为空
+                    return false;
+                } else {
+                    return true;
+                }
+            });
+            //使用 where
+            if (empty($options['where'])) {
+                unset($options['where']);
+            }
+        }
+        // 设置条件参数
+        $model->options($options);
+        //分页处理
+        $totalSql = '(' . $model->field($pk . ',0 as delete_time')->fetchSql(true)->select() . ')';
+        $total    = db()->table($totalSql)->alias('t')->count(); //echo $model->getLastSql();echo '<br/>';
+        //只把get放入分页参数中
+        if ($is_page === true) {
+            $options['limit'] = $start . ',' . $limit;
+            // 设置查询分页数据参数
+            $model->options($options);
+        }
+        if (!empty($field) && $field !== true) {
+            $results = $model->field($field)->select();
+        } else {
+            $results = $model->select();
+        } //echo $model->getLastSql();
+        return ['data' => $results, 'total' => $total];
     }
 	
 	/**

@@ -21,7 +21,7 @@ class Collection extends Common{
             'article_id'    => $id,
 			'create_time'	=>	date('Y-m-d H:i:s'),
         ));
-        return $this->getReturn(0,$add);
+        return getReturn(0,$add);
     }
     //取消收藏
     public function delete(){
@@ -33,7 +33,7 @@ class Collection extends Common{
             return ['status' => false, 'msg' => '数据不存在！'];
         }
         $delete = db('collection')->where('id',$id)->delete();
-        return $this->getReturn(1,$delete);
+        return getReturn(1,$delete);
     }
     //我的收藏列表
     public function getList(){

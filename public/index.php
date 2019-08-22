@@ -11,13 +11,12 @@
 
 // [ 应用入口文件 ]
 
-// namespace think;
-header("Access-Control-Allow-Origin:*");
-header("Access-Control-Allow-Methods:GET, POST, OPTIONS, DELETE");
-header("Access-Control-Allow-Headers:DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type, Accept-Language, Origin, Accept-Encoding");
-
-header('Access-Control-Allow-Origin:http://localhost:3000');//表示接受http://localhost:3000的请求
-header('Access-Control-Allow-Credentials:true');//表示是否允许发送Cookie
+namespace think;
+// $origin = $_SERVER['HTTP_ORIGIN'];
+// header("Access-Control-Allow-Origin:".$origin); //允许通过的域名，这里直使用通用方法接获取前端域名
+// header('Access-Control-Allow-Credentials:true'); //表示是否允许发送Cookie
+// header("Access-Control-Allow-Methods:GET, POST, OPTIONS, DELETE"); //允许的请求方式
+// header("Access-Control-Allow-Headers:token, Origin, X-Requested-With, Content-Type, Accept"); // 允许访问的表头名称
 
 // 定义应用目录
 define('APP_PATH', __DIR__ . '/../application/');

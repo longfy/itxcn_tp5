@@ -353,3 +353,55 @@ function getSetting($index,$name,$configFile='collection'){
     }
     return '暂无';
 }
+
+/**
+ * [logic 调用系统的model方法]
+ * logic('TestLogic/one','id=1&project_id=3');
+ * @param  [type]  $logic        [[分层名]/类名/方法名]
+ * @param  array   $params       [参数(数组/字符串)]
+ * @param  boolean $appendSuffix [类名后缀/暂无使用]
+ * @return [type]                [description]
+ */
+function logic($logic, $params = array(), $appendSuffix = false,$common='index')
+{
+    $array     = explode('/', $logic);
+    $method    = array_pop($array);
+    $classname = array_pop($array);
+    $module    = $array ? array_pop($array) : 'logic';
+    $model     = model($classname, $module,$appendSuffix,$common);
+    if (is_string($params)) {
+        parse_str($params, $params);
+    }
+    return $model->$method($params);
+}
+
+/**
+ * 返回操作状态
+ * @author Ultraman/2018-06-15
+ * @param  int $code   操作码：0、添加；1、删除；2、编辑；3、操作
+ * @param  bool $status 操作结果
+ * @return array         操作状态数组
+ */
+function getReturn($code, $status)
+{
+    $status  = $status !== false;
+    $codeMsg = array(
+        0 => array(1 => '添加成功！', 0 => '添加失败，请稍后重试！'),
+        1 => array(1 => '删除成功！', 0 => '删除失败，请稍后重试！'),
+        2 => array(1 => '编辑成功！', 0 => '编辑失败，请稍后重试！'),
+        3 => array(1 => '操作成功！', 0 => '操作失败，请稍后重试！'),
+    );
+    return array('status' => $status, 'msg' => $codeMsg[$code][intval($status)]);
+}
+
+/**
+ * [msgReturn 简单的提示返回]
+ * @param  [type] $status [状态]
+ * @param  [type] $msg    [提示语]
+ * @param  [type] $data   [数据]
+ * @return [type]         [description]
+ */
+function msgReturn($msg, $status = false, $data = [])
+{
+    return array('status' => $status, 'msg' => $msg, 'data' => $data);
+}

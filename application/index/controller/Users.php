@@ -5,6 +5,19 @@
 namespace app\index\controller;
 
 class Users extends Common{
+
+    /**
+     * 获取人员列表
+     * @return [type] [description]
+     */
+    public function getList(){
+        return logic('UserLogic/getUsersList');
+    }
+
+    /**
+     * 新增
+     * @return [type] [description]
+     */
     public function add(){
         $name = input('name');
         $account = input('account');
@@ -18,7 +31,7 @@ class Users extends Common{
         if(!$password){
             return ['status' => false, 'msg' => '密码不能为空！'];
         }
-        $unique = $this->checkAccountIsUnique(input('account'));
+        $unique = logic('UserLogic/checkAccountIsUnique', ['account' => $account]);
         if (!$unique) {
             return array('status' => false, 'code' => 1, 'msg' => '该账号已存在，请重新填写账号！');
         }
@@ -27,8 +40,13 @@ class Users extends Common{
             'account'   => $account,
             'password'  => encryptPwd($password),
         ));
-        return $this->getReturn(0, $add);
+        return getReturn(0, $add);
     }
+
+    /**
+     * 编辑
+     * @return [type] [description]
+     */
     public function edit(){
         $name = input('name');
         $account = input('account');
@@ -57,35 +75,16 @@ class Users extends Common{
             'name'=> $name,
             'password'  => encryptPwd($new_password),
         ));
-        return $this->getReturn(2, $update);
+        return getReturn(2, $update);
     }
-    public function delete(){
-        $account = input('account');
-        $password = input('password');
-        if(!$account){
-            return ['status' => false, 'msg' => '账号不能为空！'];
-        }
-        if(!$password){
-            return ['status' => false, 'msg' => '密码不能为空！'];
-        }
-        $db_password = db('users')->where('account',$account)->value('password');
-        if(!$db_password){
-            return ['status' => false, 'msg' => '用户名不存在！'];
-        }
-        if(encryptPwd($password) != $db_password) {
-            return ['status' => false, 'msg' => '密码不正确！'];
-        }
-        $delete = db('users')->where('account',$account)->delete();
-        return $this->getReturn(1,$delete);
-    }
+
     /**
-     * 验证账号是否唯一
-     * @author Ultraman/2018-05-25
-     * @param  string $account 账号
-     * @return bool 验证结果
+     * 删除
+     * @return [type] [description]
      */
-    protected function checkAccountIsUnique($account, $id = 0)
-    {
-        return db('users')->where(array('account' => $account, 'id' => array('NEQ', $id)))->count() == 0;
+    public function delete(){
+        $params['account'] = input('account');
+        $params['password'] = input('password');
+        logic('UserLogic/delUser', $params);
     }
 }

@@ -16,32 +16,10 @@ class Index extends Common{
      */
     public function login()
     {
-        $user = db('users')->where(array('account' => input('userName')))->find();
-		if (!empty($user)) {
-			if ($user['remain'] == 0) {
-				return array('status' => false, 'msg' => '该账号已被锁定，请联系管理员解锁！');
-			} else if ($user['password'] == encryptPwd(input('password'))) {
-				//保存session
-				session('user.id', $user['id']);
-				session('user.name', $user['name']);
-				session('user.user_type', $user['user_type']);
-				//重置登录错误次数
-                db('users')->where(array('id' => $user['id']))->update(array('remain' => 5));
-				return array('status' => true, 'msg' => '登录成功！', 'name' => $user['name'], 'user_type' => $user['user_type']);
-			} else {
-				db('users')->where(array('id' => $user['id']))->update(['remain' => array('dec', '1')]);
-				if ($user['remain'] == 1) {
-					$error = '登录失败，用户名或密码错误！该账号已被锁定，请联系管理员解锁！';
-				} else if ($user['remain'] <= 4) {
-					$error = '登录失败，用户名或密码错误！您还有' . ($user['remain'] - 1) . '次机会，系统将会锁定账号！';
-				} else {
-					$error = '登录失败，用户名或密码错误！';
-				}
-				return array('status' => false, 'msg' => $error);
-			}
-		} else {
-			return array('status' => false, 'msg' => '登录失败，用户名或密码错误！');
-		}
+		$param['userName'] = input('userName');
+        $param['password'] = input('password');
+		$param['userType'] = 0;
+		return logic('IndexLogic/login',$param);
     }
     /**
      * 验证用户是否登录
@@ -57,8 +35,7 @@ class Index extends Common{
     /* 退出登录 */
     public function logout()
     {
-        session(null);
-        return array('status' => true, 'msg' => '退出成功！');
+        return logic('IndexLogic/LoginOut');
     }
     /**
      * 输出验证码图片
