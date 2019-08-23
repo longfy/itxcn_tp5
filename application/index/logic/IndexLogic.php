@@ -54,7 +54,7 @@ class IndexLogic extends CommonLogic
 	public function loginOut(){
 		//logic('LogLogic/log', 2);
         session(null);
-        return msgReturn(true, '退出成功！');
+        return msgReturn('退出成功！', true);
 	}
 	
 }

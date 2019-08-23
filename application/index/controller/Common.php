@@ -28,11 +28,11 @@ class Common extends Controller{
         $uploadPath = config('upload_path.file_path');
         $type       = config('upload_file_type');
         $size       = config('upload_file_size');
-        $fileName   = $file->getInfo()['name'];
         if($file){
             //验证、上传文件
             $info = $file->validate(['size' => $size, 'ext' => $type])->move(ROOT_PATH . 'public' . DS . $uploadPath, true, false);
             if($info){
+                $fileName = $file->getInfo()['name']; // php.ini 配置文件下 ;extension=php_fileinfo.dll，去掉分号
                 $saveName = $info->getFilename();
                 $savepath = substr($info->getSaveName(), 0, strpos($info->getSaveName(), DS));
                 $filePath = ROOT_PATH . 'public' . DS . $uploadPath . DS . $info->getSaveName();
